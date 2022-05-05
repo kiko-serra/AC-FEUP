@@ -1,0 +1,18 @@
+.text
+.global NUM_OF_1_BITES
+.type NUM_OF_1_BITES ,"function"
+
+NUM_OF_1_BITES:	MOV X1, XZR
+				CMP X0, XZR
+				B.MI NEGATIVE
+CONTA:			CBZ X0, FIM
+				AND X3, X0, 1
+				ASR X0, X0, 1
+				ADD X1, X3, X1
+				B CONTA
+
+NEGATIVE: 		NEGS X0, X0
+				B CONTA
+
+FIM:			MOV X0, X1
+				RET
