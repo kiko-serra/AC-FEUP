@@ -1,0 +1,19 @@
+.text
+.global IN_RANGE
+.type IN_RANGE ,"function"
+
+IN_RANGE: 	MOV X5, XZR // CONTADOR
+NEXT:		CBZ W1, FIM
+			LDR X4, [X0], 8
+			SUB W1, W1, 1
+			CMP X2, X4
+			B.GE MAX
+			B NEXT
+
+MAX:		CMP X3, X4
+			B.GT NEXT //SE FOR MENOR DO QUE O MIN CARREGA OUTRO SENAO VAI PARA O MIN
+MIN:		ADD X5, X5,1
+			B NEXT
+
+FIM: 		MOV X0, X5
+			RET
