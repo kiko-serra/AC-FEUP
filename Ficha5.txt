@@ -1,0 +1,132 @@
+###############################################################################
+Implementação AArch64 II
+###############################################################################
+
+1. arquitetura multi-ciclo do MIPS
+
+-------------------------------------------------------------------------------
+1) IF: Instruction Fetch
+   (MemRead / ALUSrcA=0 / IorD=0 / IRWrite / ALUSrcB=01 / ALUOp=00 / PCWrite / PCSource=00)
+   IR = Memory[PC]
+   PC = PC + 4
+2) ID: Instruction Decode and Register Fetch
+   (ALUSrcA=0 / ALUSrcB=11 / ALUOp=00)
+   A = Reg[IR[25-21]]
+   B = Reg[IR[20-16]]
+   ALUOut = PC + (signExtend(IR[15-0])<<2)
+3) EX: Execution, memory address calculation, branch
+   * arithmetic/logical type R (ALUSrcA=1 / ALUSrcB=00 / ALUOp=10)
+     ALUOut = A op B
+   * load/store (ALUSrcA=1 / ALUSrcB=10 / ALUOp=00)
+     ALUOut = A + signExtend(IR[15-0])
+   * branch (ALUSrcA=1 / ALUSrcB=00 / ALUOp=01 / PCWriteCond / PCSource=01)
+     if (A == B) PC = ALUOut
+   * jump (PCWrite / PCSource=10)
+     PC = PC[31-28] || (IR[25-0]<<2)
+4) MEM: Memory Access or “R”-Type Completion
+   * arithmetic/logic, type R (RegDst=1 / RegWrite / MemtoReg=0)
+     Reg[IR[15-11]] = ALUOut
+   * load (MemRead / IorD=1)
+     MDR = Memory[ALUOut]
+   * store (MemWrite / IorD=1)
+     Memory[ALUOut] = B
+5) WB: Memory Read Completion (Write-Back)
+   * load (RegDst=0 / RegWrite / MemtoReg=1)
+     Reg[IR[20-16]] = MDR
+-------------------------------------------------------------------------------
+
+lw $t2, 100($t1)
+
+* IF
+  (MemRead / ALUSrcA=0 / IorD=0 / IRWrite / ALUSrcB=01 / ALUOp=00 / PCWrite / PCSource=00)
+  IR = Memory[PC]                           IR = lw $t2, 100($t1)
+  PC = PC + 4
+* ID
+  (ALUSrcA=0 / ALUSrcB=11 / ALUOp=00)
+  A = Reg[IR[25-21]]                        A = Reg[$t1]
+  B = Reg[IR[20-16]]                        B = Reg[$t2]
+  ALUOut = PC + (signExtend(IR[15-0])<<2)   (ignored)
+* EX
+  (ALUSrcA=1 / ALUSrcB=10 / ALUOp=00)
+  ALUOut = A + signExtend(IR[15-0])         ALUOut = Reg[$t1] + 100
+* MEM
+  (MemRead / IorD=1)
+  MDR = Memory[ALUOut]                      MDR = Memory[Reg[$t1] + 100]
+* WB
+  (RegDst=0 / RegWrite / MemtoReg=1)
+  Reg[IR[20-16]] = MDR                      Reg[$t2] = Memory[Reg[$t1] + 100])
+
+-------------------------------------------------------------------------------
+
+sw $t2, -12($t1)
+
+* IF
+  (MemRead / ALUSrcA=0 / IorD=0 / IRWrite / ALUSrcB=01 / ALUOp=00 / PCWrite / PCSource=00)
+  IR = Memory[PC]                           IR = sw $t2, -12($t1)
+  PC = PC + 4
+* ID
+  (ALUSrcA=0 / ALUSrcB=11 / ALUOp=00)
+  A = Reg[IR[25-21]]                        A = Reg[$t1]
+  B = Reg[IR[20-16]]                        B = Reg[$t2]
+  ALUOut = PC + (signExtend(IR[15-0])<<2)   (ignored)
+* EX
+  (ALUSrcA=1 / ALUSrcB=10 / ALUOp=00)
+  ALUOut = A + signExtend(IR[15-0])         ALUOut = Reg[$t1] + (-12)
+* MEM
+  (MemWrite / IorD=1)
+  Memory[ALUOut] = B                        Memory[Reg[$t1] - 12] = Reg[$t2]
+
+-------------------------------------------------------------------------------
+
+add $t3, $t1, $t2
+* IF
+  (MemRead / ALUSrcA=0 / IorD=0 / IRWrite / ALUSrcB=01 / ALUOp=00 / PCWrite / PCSource=00)
+  IR = Memory[PC]                           IR = add $t3, $t1, $t2
+  PC = PC + 4
+* ID
+  (ALUSrcA=0 / ALUSrcB=11 / ALUOp=00)
+  A = Reg[IR[25-21]]                        A = Reg[$t1]
+  B = Reg[IR[20-16]]                        B = Reg[$t2]
+  ALUOut = PC + (signExtend(IR[15-0])<<2)   (ignored)
+* EX
+  (ALUSrcA=1 / ALUSrcB=00 / ALUOp=10)       ALUOp=10 --> op = Instruction[5-0] = add
+  ALUOut = A op B                           ALUOut = Reg[$t1] + Reg[$t2]
+* MEM
+  (RegDst=1 / RegWrite / MemtoReg=0)
+  Reg[IR[15-11]] = ALUOut                   Reg[$t3] = Reg[$t1] + Reg[$t2]
+
+-------------------------------------------------------------------------------
+
+beq $t1, $t2, _label
+
+* IF
+  (MemRead / ALUSrcA=0 / IorD=0 / IRWrite / ALUSrcB=01 / ALUOp=00 / PCWrite / PCSource=00)
+  IR = Memory[PC]                           IR = beq $t1, $t2, address
+  PC = PC + 4
+* ID
+  (ALUSrcA=0 / ALUSrcB=11 / ALUOp=00)
+  A = Reg[IR[25-21]]                        A = Reg[$t1]
+  B = Reg[IR[20-16]]                        B = Reg[$t2]
+  ALUOut = PC + (signExtend(IR[15-0])<<2)   ALUOut = PC + address<<2 = _label
+* EX
+  (ALUSrcA=1 / ALUSrcB=00 / ALUOp=01 / PCWriteCond / PCSource=01)
+  if (A == B) PC = ALUOut                   if (Reg[$t1] == Reg[$t2]) PC = _label
+
+-------------------------------------------------------------------------------
+
+j _label
+
+* IF
+  (MemRead / ALUSrcA=0 / IorD=0 / IRWrite / ALUSrcB=01 / ALUOp=00 / PCWrite / PCSource=00)
+  IR = Memory[PC]                           IR = j address
+  PC = PC + 4
+* ID
+  (ALUSrcA=0 / ALUSrcB=11 / ALUOp=00)
+  A = Reg[IR[25-21]]                        (ignored)
+  B = Reg[IR[20-16]]                        (ignored)
+  ALUOut = PC + (signExtend(IR[15-0])<<2)   (ignored)
+* EX
+  (PCWrite / PCSource=10)
+  PC = PC[31-28] || (IR[25-0]<<2)           PC = PC[31-28] || (address<<2) = _label
+
+###############################################################################

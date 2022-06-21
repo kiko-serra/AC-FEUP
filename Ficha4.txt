@@ -1,0 +1,102 @@
+###############################################################################
+Implementação AArch64 I
+###############################################################################
+
+1. 32 registos de 64 bits
+
+A = B = C : 5 linhas
+D = E = F : 64 linhas
+
+###############################################################################
+
+2. decoder 3 entradas
+       ____
+D0 --o|    \
+      | AND )--- Out0
+D1 --o|____/ 
+       ____
+D0 ---|    \
+      | AND )--- Out1
+D1 --o|____/ 
+       ____
+D0 --o|    \
+      | AND )--- Out2
+D1 ---|____/ 
+       ____
+D0 ---|    \
+      | AND )--- Out3
+D1 ---|____/ 
+
+###############################################################################
+
+3. multiplexor 3 entradas
+       ____
+A  ---|    \
+S0 --o| AND )--\
+S1 --o|____/   |
+               |
+       ____    |   _____
+B  ---|    \   \---\    \
+S0 ---| AND )-------) OR )--- D
+S1 --o|____/   /---/____/
+               |
+       ____    |
+C  ---|    \   |
+S0 --o| AND )--/ 
+S1 ---|____/
+
+###############################################################################
+
+4. sinais controlo
+
+          PCSrc Reg2Loc RegWrite ALUSrc ALUOp MemWrite MemRead MemtoReg
+a) ADD  :   0      0        1       0    10       0       0       0
+b) LDUR :   0      -        1       1    00       0       1       1
+c) STUR :   0      1        0       1    00       1       0       -
+d) CBZ  :   1      1        0       0    01       0       0       -
+e) B    :   1      -        0       -    --       0       0       -
+
+###############################################################################
+
+5. entrada registos e memória
+
+          ReadReg1 ReadReg2 WriteReg   Address
+a) ADD  :    11       12       10        --
+b) LDUR :    11       --       10    Reg[X11]+40
+c) STUR :    11       10       --    Reg[X11]+40
+d) CBZ  :    --       10       --        --
+e) B    :    --       --       --        --
+
+###############################################################################
+
+6. branch register / branch and link
+
+branch register
+1) adicionar um novo multiplexor M1 ligado ao PC
+   ligar a saída do multiplexor controlado por PCSrc ao novo multiplexor M1
+   ligar a saída ReadData1 ao novo multiplexor M1
+   adicionar uma nova linha de controlo a M1
+
+branch and link
+1) adicionar um novo multiplexor M2 ligado à entrada WriteRegister dos registos
+   ligar a linha Instruction[4-0] ao novo multiplexor M2
+   ligar o valor 30 (correspondente ao registo LR) ao novo multiplexor M2
+   adicionar uma nova linha de controlo a M2
+2) adicionar um novo multiplexor M3 ligado à entrada WriteData dos registos
+   ligar a saída do multiplexor controlado por MemtoReg ao novo multiplexor M3
+   ligar a saída do adder do PC+4 ao novo multiplexor M3
+   adicionar uma nova linha de controlo a M3
+Obs) a parte do salto propriamente dita pode reutilizar as componentes 
+   utilizadas pela instrução CBZ, ativando a linha PCSrc com o sinal 1.
+
+###############################################################################
+
+7. program counter 0x00402000
+
+a) ADD  : PC 0x00402004
+b) LDUR : PC 0x00402004
+c) STUR : PC 0x00402004
+d) CBZ  : PC 0x00402004 ou 0x00402190
+e) B    : PC 0x00402320
+
+###############################################################################

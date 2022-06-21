@@ -1,0 +1,129 @@
+###############################################################################
+Análise de Desempenho
+###############################################################################
+
+IC  : Instruction Count
+CPI : Cycles Per Instruction
+CPIPerfect : CPI with no cache misses
+CPIStall   : CPI waiting for memory system
+
+CPUTime = InstructionCount * CPI * ClockPeriod
+        = InstructionCount * CPI / ClockRate
+
+CPI = CPIPerfect + CPIStall
+
+CPIStallInstructionAccess = 1 * MissRateInstructionAccess * MissPenalty
+CPIStallDataAccess = LoadStores/IC * MissRateDataAccess * MissPenalty
+
+CPIStall = CPIStallInstructionAccess + CPIStallDataAccess 
+         ≈ (1 + LoadStores/IC) * MissRate * MissPenalty
+         ≈ MissRate * MissPenalty
+         = MissRateL1 * MissPenaltyL1 + GlobalMissRateL2 * MissPenaltyL2 + ...
+
+GlobalMissRateLi = MissRateL1 * ... * MissRateLi
+
+###############################################################################
+
+1. P1 : 3.0 GHz - 1.5 CPI 
+   P2 : 2.5 GHz - 1.0 CPI
+   P3 : 4.0 GHz - 2.2 CPI 
+
+a) 1 = InstructionCount * CPI / ClockRate
+   InstructionCount = ClockRate / CPI
+
+   P1 (instrucoes/s) = 3.0 * 10^9 / 1.5 = 2.00 * 10^9
+   P2 (instrucoes/s) = 2.5 * 10^9 / 1.0 = 2.50 * 10^9
+   P3 (instrucoes/s) = 4.0 * 10^9 / 2.2 = 1.82 * 10^9
+
+b) 10 = InstructionCount * CPI / ClockRate
+   InstructionCount = 10 * ClockRate / CPI
+
+   P1 (ciclos/10s) = 10 * 3.0 * 10^9 = 30 * 10^9
+   P2 (ciclos/10s) = 10 * 2.5 * 10^9 = 25 * 10^9
+   P3 (ciclos/10s) = 10 * 4.0 * 10^9 = 40 * 10^9
+   P1 (instrucoes/10s) = 30 * 10^9 / 1.5 = 20.00 * 10^9
+   P2 (instrucoes/10s) = 25 * 10^9 / 1.0 = 25.00 * 10^9
+   P3 (instrucoes/10s) = 40 * 10^9 / 2.2 = 18.18 * 10^9
+
+c) 0.7 = InstructionCount * newCPI / newClockRate
+   newClockRate = InstructionCount * newCPI / 0.7
+
+   P1 (newCPI) = 1.5 * 1.2 = 1.80
+   P2 (newCPI) = 1.0 * 1.2 = 1.20
+   P3 (newCPI) = 2.2 * 1.2 = 2.64
+   P1 (newClockRate) = 2.00 * 10^9 * 1.80 / 0.7 = 5.14 GHz
+   P2 (newClockRate) = 2.50 * 10^9 * 1.20 / 0.7 = 4.28 GHz   
+   P3 (newClockRate) = 1.82 * 10^9 * 2.64 / 0.7 = 6.86 GHz   
+
+###############################################################################
+
+2. CPIPerfect = 3.50
+   LoadStores/IC = 0.30
+   MIssRateInstructionAccess = 0.02
+   MIssRateDataAccess = 0.04    
+   MissPenalty = 200
+   
+a) CPIStallInstructionAccess = 1 * MIssRateInstructionAccess * MissPenalty = 1 * 0.02 * 200 = 4.00
+   CPIStallDataAccess = LoadStores/IC * MIssRateDataAccess * MissPenalty = 0.30 * 0.04 * 200 = 2.40
+   CPIStall = CPIStallInstructionAccess + CPIStallDataAccess = 4.00 + 2.40 = 6.40
+   CPI = CPIPerfect + CPIStall = 3.50 + 6.40 = 9.90
+  
+b) CPIStallInstructionAccess = 1 * (0.02 * 20 + 0.005 * 200) = 1.40
+   CPIStallDataAccess = 0.30 * (0.04 * 20 + 0.005 * 200) = 0.54
+   CPIStall = 1.40 + 0.54 = 1.94
+   CPI = 3.50 + 1.94 = 5.44
+
+   A configuração CPU-L1-L2-Mem é cerca de 1.82 (9.90/5.44) vezes mais rápida do que
+   a configuração CPU-L1-Mem.
+
+c) CPIPerfect = 5.00
+   MissPenalty aumenta proporcionalmente (2x)
+
+   CPU-L1-Mem:
+   CPIStallInstructionAccess = 1 * 0.02 * 400 = 8.00
+   CPIStallDataAccess = 0.30 * 0.04 * 400 = 4.80
+   CPIStall = 8.00 + 4.80 = 12.80
+   CPI = 5.00 + 12.80 = 17.80 (equivalente a 8.90 na configuração original)
+   O desempenho aumentaria em 1.11 vezes (9.90/8.90).
+
+   CPU-L1-L2-Mem:
+   CPIStallInstructionAccess = 1 * (0.02 * 40 + 0.005 * 400) = 2.80
+   CPIStallDataAccess = 0.30 * (0.04 * 40 + 0.005 * 400) = 1.08
+   CPIStall = 2.80 + 1.08 = 3.88
+   CPI = 5.00 + 3.88 = 8.88 (equivalente a 4.44 na configuração original)
+   O desempenho aumentaria 1.23 (5.44/4.44).
+
+###############################################################################
+
+3. P1 : 2KB - 8% MissRate - 0.66ns HitTime
+   P2 : 4KB - 6% MissRate - 0.90ns HitTime
+   MissPenalty = 70ns
+   MemoryAccesses/IC = 0.36
+   
+a) P1 : ClockRate = 1 / (0.66 * 10^(-9)) = 1.52 * 10^9 = 1.52 GHz
+   P2 : ClockRate = 1 / (0.90 * 10^(-9)) = 1.11 * 10^9 = 1.11 GHz
+
+b) P1 : MemoryAccessTime = 1.00 * 0.66 + 0.08 * 70 = 6.26ns (9.48 ciclos)
+   P2 : MemoryAccessTime = 1.00 * 0.90 + 0.06 * 70 = 5.10ns (7.73 ciclos)
+
+c) P1 : MissPenalty = 70 / 0.66 = 106.06 = 107 ciclos
+        CPIStallInstructionAccess = 1 * 0.08 * 107 = 8.56
+        CPIDataAccess = 0.36 * 0.08 * 107 = 3.08
+	CPI = 1.00 + 8.56 + 3.08 = 12.64
+	CPI/ClockRate = 12.64 / 1.52 = 8.31
+   P2 : MissPenalty = 70 / 0.90 = 77.78 = 78 ciclos
+        CPIStallInstructionAccess = 1 * 0.06 * 78 = 4.68
+        CPIDataAccess = 0.36 * 0.06 * 78 = 1.68
+	CPI = 1.00 + 4.68 + 1.68 = 7.36
+	CPI/ClockRate = 7.36 / 1.11 = 6.63	
+   P2 é cerca de 1.25 (8.31/6.63) vezes mais rápido do que P1.
+
+d) L2 : 1MB - 3% MissRate - 5.62ns HitTime = 8.52 = 9 ciclos
+
+   P1 : MemoryAccessTime = 1.00 * 0.66 + 0.08 * (1.00 * 5.62 + 0.03 * 70) = 1.28ns (1.94 ciclos)
+   P1 : CPIStallInstructionAccess = 1 * (0.08 * 9 + 0.08 * 0.03 * 107) = 0.97
+        CPIDataAccess = 0.36 * (0.08 * 9 + 0.08 * 0.03 * 107) = 0.35
+	CPI = 1.00 + 0.97 + 0.35 = 2.32
+   P1 é cerca de 5.44 (12.64/2.32) vezes mais rápido com a cache L2.
+   
+###############################################################################

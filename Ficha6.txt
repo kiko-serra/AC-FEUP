@@ -1,0 +1,81 @@
+###############################################################################
+Implementação AArch64 III
+###############################################################################
+
+1. IF:  250ps
+   ID:  200ps
+   EX:  250ps
+   MEM: 300ps
+   WB:  200ps
+
+a) ciclo único: 250 + 200 + 250 + 300 + 200  = 1200ps
+   multi-ciclo: max(250, 200, 250, 300, 200) =  300ps
+   pipelining:  max(250, 200, 250, 300, 200) =  300ps
+
+b) ADD X10, X11, X12    : IF + ID + EX + MEM      : 1200ps / 1200ps / 1500ps
+   LDUR X10, [X11, #40] : IF + ID + EX + MEM + WB : 1200ps / 1500ps / 1500ps
+   STUR X10, [X11, #40] : IF + ID + EX + MEM      : 1200ps / 1200ps / 1500ps
+   CBZ X10, #100        : IF + ID + EX            : 1200ps /  900ps / 1500ps
+   B #200               : IF + ID + EX            : 1200ps /  900ps / 1500ps
+
+c) instruções do tipo R-format: 45%
+   instruções do tipo load: 20%
+   instruções do tipo store: 15%
+   instruções de salto: 20%
+
+   ciclo único x multi-ciclo: 1200 / (300 * (0.2*5 + 0.6*4 + 0.2*3)) = 1.000
+   ciclo único x pipelining: 1200 / 300 = 4.000
+   multi-ciclo x pipelining: (0.2*5 + 0.6*4 + 0.2*3) / 1 = 4.000
+
+d) 40/4 = 10 s
+
+###############################################################################
+
+2.
+
+SUB X20, X10, X11    : RegWrite: 1  Rn: X10  Rm: X11  Rd: X20
+ADD X21, X10, X12    : RegWrite: 1  Rn: X10  Rm: X12  Rd: X21
+AND X22, X21, X13    : RegWrite: 1  Rn: X21  Rm: X13  Rd: X22
+ORR X23, X21, X14    : RegWrite: 1  Rn: X21  Rm: X14  Rd: X23
+CBZ X20, X21, _label : RegWrite: 0  Rn: ---  Rm: ---  Rd: ---
+
+if (EX/MEM.RegWrite and EX/MEM.RegisterRd ≠ 31 and 
+    EX/MEM.RegisterRd = ID/EX.RegisterRn) ForwardA = 10
+else if (MEM/WB.RegWrite and MEM/WB.RegisterRd ≠ 31 and 
+    MEM/WB.RegisterRd = ID/EX.RegisterRn) ForwardA = 01
+else forwardA = 00
+
+if (EX/MEM.RegWrite and EX/MEM.RegisterRd ≠ 31 and 
+    EX/MEM.RegisterRd = ID/EX.RegisterRm) ForwardB = 10
+else if (MEM/WB.RegWrite and MEM/WB.RegisterRd ≠ 31 and 
+    MEM/WB.RegisterRd = ID/EX.RegisterRm) ForwardB = 01
+else forwardB = 00
+
+-----------------------------------------------
+SUB             - EX  | MEM | WB  |     |     |
+ADD             - ID  | EX  | MEM | WB  |     |
+AND             - IF  | ID  | EX  | MEM | WB  |
+ORR             -     | IF  | ID  | EX  | MEM |
+CBZ             -     |     | IF  | ID  | EX  |
+-----------------------------------------------
+ID/EX.RegWrite  -  1  |  1  |  1  |  1  |  0  |
+ID/EX.Rn        - X10 | X10 | X21 | X21 | --- |
+ID/EX.Rm        - X11 | X12 | X13 | X14 | --- |
+ID/EX.Rd        - X20 | X21 | X22 | X23 | --- |
+EX/MEM.Rd       -  ?  | X20 | X21 | X22 | X23 |
+MEM/WB.Rd       -  ?  |  ?  | X20 | X21 | X22 |
+EX/MEM.RegWrite -  ?  |  1  |  1  |  1  |  1  |
+EX/MEM.RegWrite -  ?  |  ?  |  1  |  1  |  1  |
+-----------------------------------------------
+forwardA        -  ?  |  ?  | 10 *| 01 #| 00  |
+forwardB        -  ?  |  ?  | 00  | 00  | 00  |
+-----------------------------------------------
+* forwarding X21 entre as instruções ADD/AND
+# forwarding X21 entre as instruções ADD/ORR                            
+
+###############################################################################
+
+3. Não é necessário atrasar a pipeline (o registo X20 utilizado no
+   load só aparece como operando 2 instruções após o load)
+
+###############################################################################

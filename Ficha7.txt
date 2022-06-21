@@ -1,0 +1,129 @@
+###############################################################################
+Memórias Cache
+###############################################################################
+
+1. Determinar tag e index de endereços
+
+Cache I
+a) 0x0000222c = 00000000000000000010.0010001011.00
+          tag = 00000000000000000010               : 2
+        index =                      0010001011    : 139
+b) 0x00001956 = 00000000000000000001.1001010101.10
+          tag = 00000000000000000001               : 1
+        index =                      1001010101    : 597
+c) 0x00004321 = 00000000000000000100.0011001000.01
+          tag = 00000000000000000100               : 4
+        index =                      0011001000    : 200
+d) 0x00000037 = 00000000000000000000.0000001101.11
+          tag = 00000000000000000000               : 0
+        index =                      0000001101    : 13
+
+Cache II
+a) 0x0000222c = 000000000000000000.10001000.101100
+          tag = 000000000000000000                 : 0
+        index =                    10001000        : 136
+b) 0x00001956 = 000000000000000000.01100101.010110
+          tag = 000000000000000000                 : 0
+        index =                    01100101        : 101
+c) 0x00004321 = 000000000000000001.00001100.100001
+          tag = 000000000000000001                 : 1
+        index =                    00001100        : 12
+d) 0x00000037 = 000000000000000000.00000000.110111
+          tag = 000000000000000000                 : 0
+        index =                    00000000        : 0
+
+Cache III
+a) 0x0000222c = 0000000000000000001000.10001011.00
+          tag = 0000000000000000001000             : 8
+        index =                        10001011    : 139
+b) 0x00001956 = 0000000000000000000110.01010101.10
+          tag = 0000000000000000000110             : 6
+        index =                        01010101    : 85
+c) 0x00004321 = 0000000000000000010000.11001000.01
+          tag = 0000000000000000010000             : 16
+        index =                        11001000    : 200
+d) 0x00000037 = 0000000000000000000000.00001101.11
+          tag = 0000000000000000000000             : 0
+        index =                        00001101    : 13
+
+###############################################################################
+
+2. Memória principal com 4 GiB (2^32)
+
+a) o tipo de cache
+   mapeamento direto / mapeamento direto / associativa 4-way
+
+b) o número de linhas da cache (2^index * set)
+   2^10 / 2^8 / 2^10
+
+c) a capacidade de cada linha da cache em bytes (bits/8)
+   2^2 / 2^6 / 2^2 (2^4 por set)
+
+d) a capacidade total da cache em bytes
+   2^12 / 2^14 / 2^12 
+
+e) o número de bits necessários para implementar a cache
+   54272 = 2^10 * (1+20+32) / 135936 = 2^8 * (1+18+512) / 56320 = 2^10 * (1+22+32)
+
+f) o número de linhas de cache em que pode ser dividida a memória
+   2^30 / 2^26 / 2^30
+
+g) o número de linhas de memória mapeadas na mesma linha da cache
+   2^20 / 2^18 / 2^22
+
+###############################################################################
+
+3. Memória principal com 2 MiB (2^21)
+
+a) o número de linhas de cache em que pode ser dividida a memória
+   2^19 / 2^15 / 2^19
+
+b) o número de linhas de memória mapeadas na mesma linha da cache
+   2^9 / 2^7 / 2^11
+
+###############################################################################
+
+4. 0xC0C0C0C0 = 110000001100000011.00000011.000000
+
+a) cache hit  = 110000001100000011.00000011.??????
+   expressão genérica: 0xC0C0C0[CDEF]?
+   2 exemplos: 0xC0C0C0C8 / 0xC0C0C0F1
+  
+b) cache miss = ??????????????????.00000011.??????
+   expressão genérica: 0x????[048C]0[CDEF]?
+   2 exemplos: 0xAAAAC0C0 / 0xC0C080F1
+  
+###############################################################################
+
+5. C1 blocos 1 palavra - C2 blocos 2 palavras - C3 blocos 4 palavras
+
+a) endereços em bytes: 12, 720, 172, 8, 764, 352, 760, 56, 724, 176, 744, 1012 
+   endereços em words:  3, 180,  43, 2, 191,  88, 190, 14, 181,  44, 186,  253
+
+b) cache C1 miss rate = 100%
+   cache C2 miss rate = 10/12 = 83%
+   cache C3 miss rate = 11/12 = 92%
+   --> Cache C2 tem o menor miss rate
+
+                      cache C1  cache C2  cache C3 
+Word    Binary   tag index H/M index H/M index H/M
+
+  3   000000 011   0     3  M      1  M      0  M
+180   010110 100  22     4  M      2  M      1  M
+ 43   000101 011   5     3  M      1  M      0  M
+  2   000000 010   0     2  M      1  M      0  M
+191   010111 111  23     7  M      3  M      1  M
+ 88   001011 000  11     0  M      0  M      0  M
+190   010111 110  23     6  M      3  H      1  H
+ 14   000001 110   1     6  M      3  M      1  M
+181   010110 101  22     5  M      2  H      1  M
+ 44   000101 100   5     4  M      2  M      1  M
+186   010111 010  23     2  M      1  M      0  M
+253   011111 101  31     5  M      2  M      1  M
+
+c) cache C1 total de ciclos = 12 * 25 + 12 * 2 = 324
+   cache C2 total de ciclos = 10 * 25 + 12 * 3 = 286
+   cache C3 total de ciclos = 11 * 25 + 12 * 5 = 335
+   --> Cache C2 tem o melhor desempenho
+
+###############################################################################
