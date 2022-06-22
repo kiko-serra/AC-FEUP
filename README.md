@@ -13,3 +13,5 @@ Exercícios resolvidos da [Ficha 6](./Ficha6.txt)
 Exercícios resolvidos da [Ficha 7](./Ficha7.txt)
 <br>
 Exercícios resolvidos da [Ficha 8](./Ficha8.txt)
+<br>
+Exercícios resolvidos da [Ficha 9](./Ficha9.txt)
