@@ -1,0 +1,163 @@
+###############################################################################
+Perifericos
+###############################################################################
+t_access = t_seek + t_rot + t_transf + t_cntrl
+t_rot = 0.5 * 60/RPM
+t_trans = n_bytes/taxa
+
+
+
+###############################################################################
+
+1. polling_cicles: 800 polling_cicles
+    CPUClock = 2*10^9
+
+
+a) F_rato = 50/s
+n_cicles/s = F_rato * polling_cicles = 800 * 50 = 4 * 10 ^4 ciclos/s
+cpu_load = f_necessaria_rato / F_CPU = 4* 10^4 / 2 * 10 ^9 = 0.002%
+
+   
+b) 16 bits = 2 Bytes, taxa 50kiB 
+F_access = 50*10^3 / 2 = 25* 10^3 access/s 
+n_cicles/s =  50*10^3 * 800 = 2 * 10^7 cicles/s
+cpu_load = 2 * 10^7 / 2*10^9 = 1%
+
+   
+c) 4 words (4 bytes each) = 16Bytes, Taxa 8MiB/s
+n_access = 8 * 10^6 / 16 =  5 * 10^5 access/s 
+n_cicles/s=  5* 10^5 * 800 =   4*10^8 cicles/s 
+cpu_load = 4*10^8 / 2*10^9 = 20% 
+   
+
+###############################################################################
+
+2. ovehead_IRQ_attend = 1000 ciclos 
+   taxa_tranfer_data = 5% 
+   CPUClock= 2 * 10^9
+   groups = 4 words (4 bytes each) = 16bytes
+   taxa-trans = 8MB/s
+   
+a) n_access/s = 5*10^5 access/s -> 0.05 = 2.5*10^4 acces/s 
+cicles/s = 2.5*10^4 * 1000 = 2.5 * 10^7 cicles/s 
+cpu_load = 2.5*10^7 / 2 *10^9 = 1.25% 
+
+NOTA= for the same perhipheral, we reduced the % cpu load 16% 
+
+###############################################################################
+
+3. DMA establish = 2500 cicles
+   cicles_IRQ_DMAP_handling = 500 cicles
+   taxa transfeencia = 8kiB 
+   disck_occup = 100%
+
+   total_cicles_DMA = 500 + 2500 = 3000 cicloes
+   IOP (in/out operations)
+   IOP = 8*10^6 / 8 * 10^3 = 1000 IOP/s 
+   cicles/s = tota_cicles_DMA * IOP/s = 3000 * 1000 = 3*10^6
+   CPU_load = 3*10^6 / 2 * 10^9 = 0.15%
+   
+###############################################################################
+
+4. CPUClock = 2 * 10^9
+   blocks = 16KiB
+   taxa trans = 800MB/s 
+
+a) CPU_load = 0.99
+cicles_pooling = 200 cicles 
+polling_op/s = CPUCLock * %free_cpu  / cicles_pooling  = 2*10^9 * 0.01 / 200
+= 1 * 10^5 
+
+   
+b) Nblocks? 
+t_operacao = 16 * 10^3 / 800 * 10^6  = 2 * 10^4
+n_operacoes/ s = 1 / 2* 10^4 = 5 * 10^4 
+
+
+  
+c) 50*10^4 operacoes  
+50 000 operações. Apesar do CPU suportar mais operações, estas não são necessárias, pois a
+câmara de vídeo não iria tirar partido das mesma
+
+###############################################################################
+
+8. cap cada sector = 512 bytes 
+   disk speed = 10000RPM
+   t_seek_avg = 6ms
+   taxa trans = 50MB/s 
+   t_contr = 0.2ms 
+
+a) ta = t_seek + t_rot + t_trans + t_contr 
+t_rot = 0.5 * 60 /RPM = 0.5 * 60 / 100000 = 3ms 
+t_trans = 512 / 50* 10^6 = 0.01ms 
+ta = 6ms + 3ms + 0.01ms + 0.2ms = 9.21ms
+
+b) t_seek = 0.25 * 6ms = 1.5ms
+ ta = 1.25ms + 3ms + 0.01ms + 0.2ms = 4.71ms
+  9.21/4.71 = 1.95 X 
+
+   
+
+###############################################################################
+
+9. magnetic disk
+   10000RPM 
+   416 sectos (512 bytes ciclindro)
+   t_seek_min = 2ms 
+   t_seek_avg = 8ms 
+   taxa_trans = 80MB/s 
+
+   tempo transfer 200KiB e 400KiB (cilindros consecutivos)
+   each cilinder = 416 * 512B = 213KiB 
+   t_rot = 0.5 * 60/10000 = 3ms  
+   t_trans = 512/80* 10^6 = 0.0064ms ~0.01ms 
+
+a)
+ta = t_seek * t_rot + t_trans 
+Primeiro file (cabe 1 cilindro) < 213kib ,  400 secotes sao consecutivos
+ta = t_seek_avg + t_rot + t_trans
+t_trans = 400 * 0.0064ms = 
+ta = 8ms  + 3ms  + 400 * 0.0064ms = 13.36ms 
+
+o segundo file nao cabe 1 cilindro (requer 2 cilindros)
+primeiro cilindro = 416 sectores
+segundo cilindro ocupa = 2*400 - 416  = 384 sectores 
+ta = ......
+t_trans = 400 * 0.0064ms + 2ms + 384 * 0.0064 ms  
+ta = 8ms  + 3ms  + (400 * 0.0064ms) + 2ms + (384 * 0.0064 ms)  = 18.12ms 
+  
+b) random access
+ta = (8ms + 3ms + 0.0064 ms) * 400 = 4.4 segundos 
+
+    
+
+###############################################################################
+11
+Disco Mag:
+3000 rpm 
+t_seek = 30ms 
+t_contrl = 10ms 
+taxa dados = 20MB/s 
+
+SSD:
+400KiB
+taxa dados= 10Mb/s 
+
+Para simplificar os cálculos, assumir que 1 KiB ≈ 1 × 103 B
+
+a) 40KiB  SSD 
+t_trans  = 40 * 10^3 / 10*10^6 = 4ms 
+   
+b)
+ta = t_seek + t_rot + t_trans 
+t_rot = 0.5 * 60 /3000 = 10ms 
+t_trans = 40*10^3 / 20*10^6   =.... 
+ta = 30ms + 10ms  + 40*10^3/20*10^6 + 10ms = 52ms 
+
+
+
+c) 
+tamanho transferencia para o qual os dois discos sao iguais 
+0.05s  + t/20MB = t/10MB
+t = 200 *0.05/ 10 = 1MiB 
+t < 1MiB SSD, t>= 1MB MAGnitco 
